@@ -60,7 +60,14 @@ employeeForm.onsubmit = function(e) {
         if (first && second && first !== 'none' && second !== 'none' && first === second) {
             duplicatePrefError = true;
         }
-        preferences[day] = [first, second];
+        if ((!first || first === 'none') && (!second || second === 'none')) {
+            preferences[day] = null; // No preference
+        } else {
+            const prefs = [];
+            if (first && first !== 'none') prefs.push(first);
+            if (second && second !== 'none') prefs.push(second);
+            preferences[day] = prefs;
+        }
     });
     if (duplicatePrefError) {
         showEmployeeError('No duplicate preferences allowed for the same day.');

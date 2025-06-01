@@ -133,10 +133,11 @@ function collectEmployeePreferences(rawPreferences) {
 
       const priMap = dayMap[day];
 
-      // Treat null or empty object as no preference, but NOT empty string
+      // Treat null, empty object, or empty array as no preference, but NOT empty string
       if (
         priMap === null ||
-        (typeof priMap === "object" && priMap !== null && !Array.isArray(priMap) && Object.keys(priMap).length === 0)
+        (typeof priMap === "object" && priMap !== null && !Array.isArray(priMap) && Object.keys(priMap).length === 0) ||
+        (Array.isArray(priMap) && (priMap.length === 0 || priMap.every(x => !x || x === 'none')))
       ) {
         normalized[empName][day] = [...VALID_SHIFTS].sort();
         continue;
@@ -167,9 +168,26 @@ function collectEmployeePreferences(rawPreferences) {
       }
 
       // Accept already-normalized input: array of shifts
-      if (Array.isArray(priMap) && priMap.length === VALID_SHIFTS.length && priMap.every(s => VALID_SHIFTS.includes(s))) {
-        normalized[empName][day] = priMap.slice();
-        continue;
+      if (Array.isArray(priMap)) {
+        // If empty or all 'none', treat as no preference
+        if (priMap.length === 0 || priMap.every(x => !x || x === 'none')) {
+          normalized[empName][day] = [...VALID_SHIFTS].sort();
+          continue;
+        }
+        // If array of valid shift names (length 1 or 2), treat as ranked preference
+        if ((priMap.length === 1 || priMap.length === 2) && priMap.every(s => VALID_SHIFTS.includes(s))) {
+          // Fill out the rest of the shifts in order
+          const rest = VALID_SHIFTS.filter(s => !priMap.includes(s)).sort();
+          normalized[empName][day] = [...priMap, ...rest];
+          continue;
+        }
+        // If array of all valid shift names (length 3), treat as full ranking
+        if (priMap.length === VALID_SHIFTS.length && priMap.every(s => VALID_SHIFTS.includes(s))) {
+          normalized[empName][day] = priMap.slice();
+          continue;
+        }
+        // Otherwise, error
+        throw new Error(`Preferences for '${empName}' on '${day}' must be an array of 1-3 valid shift names, or null.`);
       }
 
       if (typeof priMap !== "object" || priMap === null || Array.isArray(priMap)) {
@@ -392,13 +410,23 @@ if (require.main === module) {
 app.post("/api/schedule", (req, res) => {
   try {
     const raw = req.body;
+    // Accept both { employees: [...] } and { "Alice": {...}, ... }
+    let input = raw;
+    if (raw && Array.isArray(raw.employees)) {
+      input = {};
+      for (const emp of raw.employees) {
+        if (emp && emp.name && emp.preferences) {
+          input[emp.name] = emp.preferences;
+        }
+      }
+    }
     // Validate input is a non-empty object
-    if (!raw || typeof raw !== "object" || Array.isArray(raw) || Object.keys(raw).length === 0) {
+    if (!input || typeof input !== "object" || Array.isArray(input) || Object.keys(input).length === 0) {
       return res.status(400).json({ error: "Top-level preferences must be a non-empty object mapping employee→preferences." });
     }
     let schedule;
     try {
-      schedule = generateSchedule(raw);
+      schedule = generateSchedule(input);
     } catch (err) {
       // Return error as JSON, not HTML
       return res.status(400).json({ error: err.message || "Invalid input." });
