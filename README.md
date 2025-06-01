@@ -68,6 +68,21 @@ A web application for managing weekly employee shift schedules, implemented in b
 ---
 
 ## Screenshots
+**Add employee form:**
+![CleanShot 2025-06-01 at 05 41 04@2x](https://github.com/user-attachments/assets/f23cc812-5ed9-47d4-9adf-b334e81d14c9)
+![CleanShot 2025-06-01 at 05 44 57@2x](https://github.com/user-attachments/assets/f60f6aba-929e-4f62-aa8a-0c85963ecf19)
+**Error handling:**
+![CleanShot 2025-06-01 at 05 42 46@2x](https://github.com/user-attachments/assets/115a77b0-8775-463b-9377-ba0d881a39ad)
+![CleanShot 2025-06-01 at 05 44 03@2x](https://github.com/user-attachments/assets/127308fd-0f66-4b3c-a09b-4df864224eab)
+**Schedule output:**
+![CleanShot 2025-06-01 at 05 46 39@2x](https://github.com/user-attachments/assets/91b4eceb-fd90-4809-97e5-8c6d9c8ac1ea)
+
+
+
+
+
+
+
 
 
 ---
