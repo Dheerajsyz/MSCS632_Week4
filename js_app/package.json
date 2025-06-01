@@ -1,0 +1,23 @@
+{
+  "name": "employee-shift-scheduler",
+  "version": "1.0.0",
+  "description": "Weekly Employee Shift Scheduler with Express (Node.js) + Bootstrap UI",
+  "main": "app.js",
+  "scripts": {
+    "start": "node app.js"
+  },
+  "keywords": [
+    "scheduler",
+    "express",
+    "bootstrap",
+    "shift-scheduling",
+    "priority-ranking"
+  ],
+  "author": "Your Name",
+  "license": "MIT",
+  "dependencies": {
+    "body-parser": "^1.20.1",
+    "ejs": "^3.1.10",
+    "express": "^4.18.2"
+  }
+}

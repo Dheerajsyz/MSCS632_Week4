@@ -1,0 +1,200 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Employee Shift Scheduler</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+    <div class="container mt-5">
+        <h1 class="text-center mb-4">Employee Shift Scheduler</h1>
+        
+        <div class="card shadow-sm mb-4">
+            <div class="card-body">
+                <h5 class="card-title mb-3">Add Employee</h5>
+                <form id="employeeForm">
+                    <div class="mb-3">
+                        <label for="employeeName" class="form-label">Employee Name</label>
+                        <input type="text" class="form-control" id="employeeName" required>
+                    </div>
+                    <div class="row">
+                        {% for day in days %}
+                        <div class="col-md-6 mb-3">
+                            <div class="card">
+                                <div class="card-header">{{ day }}</div>
+                                <div class="card-body">
+                                    <div class="mb-2">
+                                        <label class="form-label">First Preference</label>
+                                        <select class="form-select" name="{{ day }}_first" required>
+                                            <option value="none">None</option>
+                                            {% for shift in shifts %}
+                                            <option value="{{ shift }}">{{ shift|title }}</option>
+                                            {% endfor %}
+                                        </select>
+                                    </div>
+                                    <div>
+                                        <label class="form-label">Second Preference</label>
+                                        <select class="form-select" name="{{ day }}_second" required>
+                                            <option value="none">None</option>
+                                            {% for shift in shifts %}
+                                            <option value="{{ shift }}">{{ shift|title }}</option>
+                                            {% endfor %}
+                                        </select>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                    <button type="submit" class="btn btn-success">Add Employee</button>
+                </form>
+            </div>
+        </div>
+
+        <div class="card shadow-sm mb-4">
+            <div class="card-body">
+                <h5 class="card-title mb-3">Employees Added</h5>
+                <ul id="employeeList" class="list-group mb-3"></ul>
+                <div id="employeeWarning" class="alert alert-warning" style="display:none;">At least 6 employees are required to generate a valid schedule.</div>
+                <div id="employeeError" class="alert alert-danger" style="display:none;"></div>
+                <button id="generateBtn" class="btn btn-primary" disabled>Generate Schedule</button>
+            </div>
+        </div>
+
+        {% if schedule %}
+        <div class="card mt-4 shadow-sm">
+            <div class="card-body">
+                <h3 class="card-title mb-4">Weekly Schedule</h3>
+                <div class="table-responsive">
+                    <table class="table table-bordered">
+                        <thead class="table-light">
+                            <tr>
+                                <th>Day</th>
+                                {% for shift in shifts %}
+                                <th>{{ shift|title }}</th>
+                                {% endfor %}
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for day in days %}
+                            <tr>
+                                <td><strong>{{ day }}</strong></td>
+                                {% for shift in shifts %}
+                                <td>
+                                    {% if schedule[day][shift] %}
+                                    <ul class="list-unstyled mb-0">
+                                        {% for employee in schedule[day][shift] %}
+                                        <li>{{ employee }}</li>
+                                        {% endfor %}
+                                    </ul>
+                                    {% else %}
+                                    -
+                                    {% endif %}
+                                </td>
+                                {% endfor %}
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+        {% endif %}
+
+        {% if error %}
+        <div class="alert alert-danger mt-4" role="alert">
+            {{ error }}
+        </div>
+        {% endif %}
+    </div>
+
+    <script>
+    const days = {{ days|tojson }};
+    const employeeList = [];
+    const employeeListElem = document.getElementById('employeeList');
+    const generateBtn = document.getElementById('generateBtn');
+    const employeeForm = document.getElementById('employeeForm');
+    const employeeWarning = document.getElementById('employeeWarning');
+    const employeeError = document.getElementById('employeeError');
+
+    function showEmployeeError(msg) {
+        employeeError.textContent = msg;
+        employeeError.style.display = '';
+        setTimeout(() => { employeeError.style.display = 'none'; }, 4000);
+    }
+
+    function isDuplicateName(name) {
+        return employeeList.some(emp => emp.name.trim().toLowerCase() === name.trim().toLowerCase());
+    }
+
+    function updateEmployeeList() {
+        employeeListElem.innerHTML = '';
+        employeeList.forEach((emp, idx) => {
+            const li = document.createElement('li');
+            li.className = 'list-group-item d-flex justify-content-between align-items-center';
+            li.textContent = emp.name;
+            const btn = document.createElement('button');
+            btn.className = 'btn btn-sm btn-danger';
+            btn.textContent = 'Remove';
+            btn.onclick = () => {
+                employeeList.splice(idx, 1);
+                updateEmployeeList();
+            };
+            li.appendChild(btn);
+            employeeListElem.appendChild(li);
+        });
+        generateBtn.disabled = employeeList.length < 6;
+        employeeWarning.style.display = employeeList.length < 6 ? '' : 'none';
+    }
+
+    employeeForm.onsubmit = function(e) {
+        e.preventDefault();
+        const formData = new FormData(employeeForm);
+        const name = document.getElementById('employeeName').value.trim();
+        if (!name) {
+            showEmployeeError('Employee name cannot be empty.');
+            return;
+        }
+        if (isDuplicateName(name)) {
+            showEmployeeError(`Employee with name “${name}” already exists.`);
+            return;
+        }
+        const preferences = {};
+        let duplicatePrefError = false;
+        days.forEach(day => {
+            const first = formData.get(day + '_first');
+            const second = formData.get(day + '_second');
+            if (first && second && first !== 'none' && second !== 'none' && first === second) {
+                duplicatePrefError = true;
+            }
+            preferences[day] = [first, second];
+        });
+        if (duplicatePrefError) {
+            showEmployeeError('No duplicate preferences allowed for the same day.');
+            return;
+        }
+        employeeList.push({ name, preferences });
+        updateEmployeeList();
+        employeeForm.reset();
+    };
+
+    generateBtn.onclick = function() {
+        // Submit all employees as JSON to the backend
+        fetch('/schedule', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ employees: employeeList })
+        })
+        .then(res => res.text())
+        .then(html => {
+            document.open();
+            document.write(html);
+            document.close();
+        });
+    };
+    </script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>

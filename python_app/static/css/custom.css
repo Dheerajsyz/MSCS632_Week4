@@ -1,0 +1,16 @@
+/* custom.css */
+
+/* Subtle card shadow in the Add/Edit modal */
+.card {
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
+}
+
+/* Slightly larger table fonts for readability */
+table {
+  font-size: 0.95rem;
+}
+
+/* Spacing around schedule container */
+#schedule-container {
+  margin-top: 2rem;
+}
